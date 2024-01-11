@@ -1,12 +1,15 @@
 import Link from "next/link"
 import { auth } from "@clerk/nextjs"
+import { redirect } from "next/navigation"
 import { HelpCircle, User2 } from "lucide-react"
 
 import { db } from "@/lib/db"
 import { Hint } from "@/components/hint"
-import { FormPopover } from "@/components/form/form-popover"
-import { redirect } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
+import { FormPopover } from "@/components/form/form-popover"
+import { MAX_FREE_BOARDS } from "@/constants/boards"
+import { getAvailableCount } from "@/lib/org-limit"
+import { checkSubscription } from "@/lib/subscription"
 
 export const BoardList = async () => {
   const { orgId } = auth();
@@ -14,6 +17,9 @@ export const BoardList = async () => {
   if(!orgId) {
     return redirect("/select-org");
   }
+
+  const availableCount = await getAvailableCount();
+  const isPro = await checkSubscription();
 
   const boards = await db.board.findMany({
     where: {
@@ -55,7 +61,7 @@ export const BoardList = async () => {
           >
             <p className="text-sm">Create new board</p>
             <span className="text-xs">
-              5 remaining
+              {isPro ? "Unlimited" : `${MAX_FREE_BOARDS - availableCount} remaining`}
             </span>
             <Hint
               sideOffset={40}
